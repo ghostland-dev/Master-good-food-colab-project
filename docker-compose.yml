@@ -55,7 +55,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./client-service:/app
-      - /app/node_modules # Évite les conflits de dépendances
+      - /app/node_modules
     env_file:
       - ./client-service/.env
     ports:
@@ -79,6 +79,21 @@ services:
 #   depends_on:
 #     franchise-db:
 #       condition: service_healthy
+  franchise-services:
+    build:
+      context: .
+      dockerfile: FranchiseService/Franchise.API/Dockerfile
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=franchise-db;Port=5432;Database=franchisedb;Username=franchisedb;Password=franchisedb
+    ports:
+      - "5000:8080"
+    networks:
+      - shrp-ntwrk
+    depends_on:
+      franchise-db:
+        condition: service_healthy
 
 # auth-db:
 #   image: postgres
@@ -100,15 +115,13 @@ services:
 
   client-db:
     image: postgres
-    # restart: always
+    restart: always
     env_file:
-      - .env
+      - client.env
     ports:
       - "5433:5432"
     networks:
       - shrp-ntwrk
-    # volumes:
-    #   - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready"]
       interval: 1s
@@ -116,25 +129,20 @@ services:
       retries: 10
 
 
-# franchise-db:
-#   image: postgres
-#   environment:
-#     - POSTGRES_USER=franchise
-#     - POSTGRES_PASSWORD=postgres
-#     - POSTGRES_DB=shrp
-#   ports:
-#    - "5434:5432"
-#   networks:
-#     - shrp-ntwrk
-
-  # adminer:
-  #   image: adminer
-  #   env_file:
-  #     - ./adminer/.env
-  #   ports:
-  #     - 8090:8080 # ne pas exposer le port en production
-  #   networks:
-  #     - shrp-ntwrk
+  franchise-db:
+    image: postgres
+    restart: always
+    env_file:
+      - franchise.env
+    ports:
+      - "5435:5432"
+    networks:
+      - shrp-ntwrk
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
 
   adminer:
     image: adminer
@@ -144,9 +152,11 @@ services:
     networks:
       - shrp-ntwrk
 
-# volumes:
+#volumes:
 #   pgdata:
+#  postgres_data:
 
 networks:
   shrp-ntwrk:
     driver: bridge
+
