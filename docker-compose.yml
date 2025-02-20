@@ -35,19 +35,19 @@ services:
 #     auth-db:
 #       condition: service_healthy
 
-# menu-services:
-#   build:
-#     context: menu-service
-#     dockerfile: Dockerfile
-#   volumes:
-#     -./menu-service:/app
-#   env_file:
-#    -./menu-service/.env
-#   networks:
-#     - shrp-ntwrk
-#   depends_on:
-#     menu-db:
-#       condition: service_healthy
+  menu-service: 
+    build: ./catalogue-service
+    volumes:
+      - ./catalogue-service/:/app
+      - ./catalogue-service/app/node_modules
+    ports:
+      - ${APP_PORT}:${APP_PORT}
+    command: npm run start:dev
+    env_file:
+      - ./catalogue-service.env
+    depends_on:
+      menu-mongodb:
+        condition: service_healthy
 
   client-services:
     build:
@@ -66,19 +66,6 @@ services:
       client-db:
         condition: service_healthy
 
-# franchise-services:
-#   build:
-#     context: franchise-service
-#     dockerfile: Dockerfile
-#   volumes:
-#     -./franchise-service:/app
-#   env_file:
-#    -./franchise-service/.env
-#   networks:
-#     - shrp-ntwrk
-#   depends_on:
-#     franchise-db:
-#       condition: service_healthy
   franchise-services:
     build:
       context: .
@@ -106,12 +93,21 @@ services:
 #   networks:
 #     - shrp-ntwrk
 
-# menu-db:
-#   image: mongo
-#   ports:
-#     - "27017:27017"
-#   networks:
-#     - shrp-ntwrk
+  menu-mongodb:
+    image: mongo:latest
+    env_file:
+      - ./catalogue-service/.env
+    ports:
+      - 27017:27017
+    volumes:
+      - mongodb_data_container:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
 
   client-db:
     image: postgres
@@ -152,9 +148,8 @@ services:
     networks:
       - shrp-ntwrk
 
-#volumes:
-#   pgdata:
-#  postgres_data:
+volumes:
+  mongodb_data_container:
 
 networks:
   shrp-ntwrk:
