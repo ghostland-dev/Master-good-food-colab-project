@@ -2,29 +2,54 @@
 using Franchise.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Franchise.API.Controllers;
-
-[Route("api/[controller]")]
-[ApiController]
-public class FranchiseController : ControllerBase
+namespace Franchise.API.Controllers
 {
-    private readonly FranchiseService _service;
-
-    public FranchiseController(FranchiseService service)
+    [Route("api/[controller]")]
+    [ApiController]
+    public class FranchiseController : ControllerBase
     {
-        _service = service;
-    }
+        private readonly FranchiseService _franchiseService;
 
-    [HttpGet]
-    public async Task<IActionResult> GetFranchises()
-    {
-        return Ok(await _service.GetAllFranchises());
-    }
+        public FranchiseController(FranchiseService franchiseService)
+        {
+            _franchiseService = franchiseService;
+        }
 
-    [HttpPost]
-    public async Task<IActionResult> CreateFranchise([FromBody] Domain.Models.Franchise franchise)
-    {
-        await _service.CreateFranchise(franchise);
-        return CreatedAtAction(nameof(GetFranchises), new { id = franchise.Id }, franchise);
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Domain.Models.Franchise>>> GetFranchises()
+        {
+            return Ok(await _franchiseService.GetAllFranchises());
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Domain.Models.Franchise>> GetFranchise(int id)
+        {
+            var franchise = await _franchiseService.GetFranchiseById(id);
+            if (franchise == null) return NotFound();
+            return Ok(franchise);
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<Domain.Models.Franchise>> CreateFranchise(Domain.Models.Franchise franchise)
+        {
+            var createdFranchise = await _franchiseService.CreateFranchise(franchise);
+            return CreatedAtAction(nameof(GetFranchise), new { id = createdFranchise.Id }, createdFranchise);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateFranchise(int id, Domain.Models.Franchise franchise)
+        {
+            var updated = await _franchiseService.UpdateFranchise(id, franchise);
+            if (!updated) return NotFound();
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteFranchise(int id)
+        {
+            var deleted = await _franchiseService.DeleteFranchise(id);
+            if (!deleted) return NotFound();
+            return NoContent();
+        }
     }
 }
