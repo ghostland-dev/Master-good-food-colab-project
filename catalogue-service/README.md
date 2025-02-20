@@ -1,4 +1,4 @@
-# A simple REST API with NestJS, Docker and MongoDB
+#  To start Mirco Service of Nestjs & MongoDB
 
 To start the project, create an `.env` file at the root of the project. If you are using Docker, use the following configurations.
 
