@@ -16,4 +16,3 @@ COPY . .
 # Creates a "dist" folder with the production build
 RUN yarn build
 
-CMD [ "npm","run","start" ]
