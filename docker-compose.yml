@@ -1,121 +1,151 @@
 services:
-gateway-services:
-  build:
-    context: gateway-service
-    dockerfile: Dockerfile
-  volumes:
-    - ./gateway-service:/app
-  env_file:
-    - ./gateway-service/.env
-  ports:
-    - "8080:8080"
-  networks:
-    - shrp-ntwrk
-  depends_on:
-    auth-services:
-      condition: service_healthy
-    menu-services:
-      condition: service_healthy
-    client-services:
-      condition: service_healthy
-    franchise-services:
-      condition: service_healthy
+# gateway-services:
+#   build:
+#     context: gateway-service
+#     dockerfile: Dockerfile
+#   volumes:
+#     - ./gateway-service:/app
+#   env_file:
+#     - ./gateway-service/.env
+#   ports:
+#     - "8080:8080"
+#   networks:
+#     - shrp-ntwrk
+#   depends_on:
+#     auth-services:
+#       condition: service_healthy
+#     menu-services:
+#       condition: service_healthy
+#     client-services:
+#       condition: service_healthy
+#     franchise-services:
+#       condition: service_healthy
 
-auth-services:
-  build:
-    context: auth-service
-    dockerfile: Dockerfile
-  volumes:
-    -./auth-service:/app
-  env_file:
-   -./auth-service/.env
-  networks:
-    - shrp-ntwrk
-  depends_on:
-    auth-db:
-      condition: service_healthy
+# auth-services:
+#   build:
+#     context: auth-service
+#     dockerfile: Dockerfile
+#   volumes:
+#     -./auth-service:/app
+#   env_file:
+#    -./auth-service/.env
+#   networks:
+#     - shrp-ntwrk
+#   depends_on:
+#     auth-db:
+#       condition: service_healthy
 
-menu-services:
-  build:
-    context: menu-service
-    dockerfile: Dockerfile
-  volumes:
-    -./menu-service:/app
-  env_file:
-   -./menu-service/.env
-  networks:
-    - shrp-ntwrk
-  depends_on:
-    menu-db:
-      condition: service_healthy
+# menu-services:
+#   build:
+#     context: menu-service
+#     dockerfile: Dockerfile
+#   volumes:
+#     -./menu-service:/app
+#   env_file:
+#    -./menu-service/.env
+#   networks:
+#     - shrp-ntwrk
+#   depends_on:
+#     menu-db:
+#       condition: service_healthy
 
-client-services:
-  build:
-    context: client-service
-    dockerfile: Dockerfile
-  volumes:
-    -./client-service:/app
-  env_file:
-   -./client-service/.env
-  networks:
-    - shrp-ntwrk
-  depends_on:
-    client-db:
-      condition: service_healthy
+  client-services:
+    build:
+      context: client-service
+      dockerfile: Dockerfile
+    volumes:
+      - ./client-service:/app
+      - /app/node_modules # Évite les conflits de dépendances
+    env_file:
+      - ./client-service/.env
+    ports:
+      - "3001:3000"
+    networks:
+      - shrp-ntwrk
+    depends_on:
+      client-db:
+        condition: service_healthy
 
-franchise-services:
-  build:
-    context: franchise-service
-    dockerfile: Dockerfile
-  volumes:
-    -./franchise-service:/app
-  env_file:
-   -./franchise-service/.env
-  networks:
-    - shrp-ntwrk
-  depends_on:
-    franchise-db:
-      condition: service_healthy
+# franchise-services:
+#   build:
+#     context: franchise-service
+#     dockerfile: Dockerfile
+#   volumes:
+#     -./franchise-service:/app
+#   env_file:
+#    -./franchise-service/.env
+#   networks:
+#     - shrp-ntwrk
+#   depends_on:
+#     franchise-db:
+#       condition: service_healthy
 
-auth-db:
-  image: postgresql
-  environment:
-    - POSTGRES_USER=auth
-    - POSTGRES_PASSWORD=postgres
-    - POSTGRES_DB=shrp
-  ports:
-   - "5435:5432"
-  networks:
-    - shrp-ntwrk
+# auth-db:
+#   image: postgres
+#   environment:
+#     - POSTGRES_USER=auth
+#     - POSTGRES_PASSWORD=postgres
+#     - POSTGRES_DB=shrp
+#   ports:
+#    - "5435:5432"
+#   networks:
+#     - shrp-ntwrk
 
-menu-db:
-  image: mongo
-  ports:
-    - "27017:27017"
-  networks:
-    - shrp-ntwrk
+# menu-db:
+#   image: mongo
+#   ports:
+#     - "27017:27017"
+#   networks:
+#     - shrp-ntwrk
 
-client-db:
-  image: postgresql
-  environment:
-    - POSTGRES_USER=client
-    - POSTGRES_PASSWORD=postgres
-    - POSTGRES_DB=shrp
-  ports:
-   - "5433:5432"
-  networks:
-    - shrp-ntwrk
+  client-db:
+    image: postgres
+    # restart: always
+    env_file:
+      - .env
+    ports:
+      - "5433:5432"
+    networks:
+      - shrp-ntwrk
+    # volumes:
+    #   - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
 
-franchise-db:
-  image: postgresql
-  environment:
-    - POSTGRES_USER=franchise
-    - POSTGRES_PASSWORD=postgres
-    - POSTGRES_DB=shrp
-  ports:
-   - "5434:5432"
-  networks:
-    - shrp-ntwrk
+
+# franchise-db:
+#   image: postgres
+#   environment:
+#     - POSTGRES_USER=franchise
+#     - POSTGRES_PASSWORD=postgres
+#     - POSTGRES_DB=shrp
+#   ports:
+#    - "5434:5432"
+#   networks:
+#     - shrp-ntwrk
+
+  # adminer:
+  #   image: adminer
+  #   env_file:
+  #     - ./adminer/.env
+  #   ports:
+  #     - 8090:8080 # ne pas exposer le port en production
+  #   networks:
+  #     - shrp-ntwrk
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    networks:
+      - shrp-ntwrk
+
+# volumes:
+#   pgdata:
 
 networks:
   shrp-ntwrk:
