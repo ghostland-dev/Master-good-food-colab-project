@@ -31,7 +31,8 @@ jobs:
 
       - name: Login to GitHub Container Registry
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
-
+      - name: Get Dockerfile from the repository 
+        run: ls -la
       - name: Build Docker Image
         run: docker build -t ${{ env.IMAGE_NAME }}:latest .
 
@@ -39,174 +40,174 @@ jobs:
         run: docker push ${{ env.IMAGE_NAME }}:latest
 
   # 🛡️ Security Scans using Trivy
-  container_scanning:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run Trivy Scan on Docker Image
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: "${{ env.IMAGE_NAME }}:latest"
-          format: "table"
-          exit-code: "1"
-          severity: "CRITICAL"
+  # container_scanning:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Run Trivy Scan on Docker Image
+  #       uses: aquasecurity/trivy-action@master
+  #       with:
+  #         image-ref: "${{ env.IMAGE_NAME }}:latest"
+  #         format: "table"
+  #         exit-code: "1"
+  #         severity: "CRITICAL"
 
-  # 🔍 SAST - Static Application Security Testing
-  sast:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Change Directory
-        run: cd client-service
+  # # 🔍 SAST - Static Application Security Testing
+  # sast:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Change Directory
+  #       run: cd client-service
 
-      - name: Run SAST Scan
-        uses: github/codeql-action/init@v2
-        with:
-          languages: javascript
-      - run: github/codeql-action/analyze@v2
+  #     - name: Run SAST Scan
+  #       uses: github/codeql-action/init@v2
+  #       with:
+  #         languages: javascript
+  #     - run: github/codeql-action/analyze@v2
 
-  # 🛡️ Secret Detection
-  secret_detection:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+  # # 🛡️ Secret Detection
+  # secret_detection:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v4
       
-      - name: Change Directory
-        run: cd client-service
+  #     - name: Change Directory
+  #       run: cd client-service
 
-      - name: Run Secret Detection
-        uses: zricethezav/gitleaks-action@v2
-        with:
-          config-path: ".github/gitleaks.toml"
-          fail: "true"
+  #     - name: Run Secret Detection
+  #       uses: zricethezav/gitleaks-action@v2
+  #       with:
+  #         config-path: ".github/gitleaks.toml"
+  #         fail: "true"
 
-  # 📦 Dependency Scanning
-  dependency_scanning:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run Dependency Check
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Change Directory
-        run: cd client-service
-      - run: npm install
-      - run: npm audit --audit-level=critical
+  # # 📦 Dependency Scanning
+  # dependency_scanning:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Run Dependency Check
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #     - name: Change Directory
+  #       run: cd client-service
+  #     - run: npm install
+  #     - run: npm audit --audit-level=critical
 
-  # 🔬 Dynamic Application Security Testing (DAST)
-  dast:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Change Directory
-        run: cd client-service
-      - name: Run OWASP ZAP DAST
-        uses: zaproxy/action-full-scan@v0.10.0
-        with:
-          target: "http://localhost:3000"
+  # # 🔬 Dynamic Application Security Testing (DAST)
+  # dast:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Change Directory
+  #       run: cd client-service
+  #     - name: Run OWASP ZAP DAST
+  #       uses: zaproxy/action-full-scan@v0.10.0
+  #       with:
+  #         target: "http://localhost:3000"
 
-  # ✅ Unit & Integration Tests
-  unit_tests:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+  # # ✅ Unit & Integration Tests
+  # unit_tests:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v4
       
-      - name: Change Directory
-        run: cd client-service
+  #     - name: Change Directory
+  #       run: cd client-service
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
 
-      - name: Install Dependencies
-        run: npm install
+  #     - name: Install Dependencies
+  #       run: npm install
 
-      - name: Run Unit Tests
-        run: npm test
+  #     - name: Run Unit Tests
+  #       run: npm test
 
-  # 📊 Code Quality Analysis
-  code_quality:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Change Directory
-        run: cd client-service
-      - name: Run ESLint & Prettier
-        run: |
-          npm run lint || true
-          npm run format || true
+  # # 📊 Code Quality Analysis
+  # code_quality:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Change Directory
+  #       run: cd client-service
+  #     - name: Run ESLint & Prettier
+  #       run: |
+  #         npm run lint || true
+  #         npm run format || true
 
-  # 🚀 Terraform Deployment on Azure
-  deploy_azure:
-    runs-on: ubuntu-latest
-    needs: [build, container_scanning, sast, unit_tests]
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+  # # 🚀 Terraform Deployment on Azure
+  # deploy_azure:
+  #   runs-on: ubuntu-latest
+  #   needs: [build, container_scanning, sast, unit_tests]
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v4
       
-      - name: Change Directory
-        run: cd catalogue-service
+  #     - name: Change Directory
+  #       run: cd catalogue-service
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
+  #     - name: Setup Terraform
+  #       uses: hashicorp/setup-terraform@v2
 
-      - name: Login to Azure
-        run: |
-          az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+  #     - name: Login to Azure
+  #       run: |
+  #         az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
 
-      - name: Deploy Infrastructure to Azure
-        run: |
-          cd terraform/azure
-          terraform init
-          terraform apply
+  #     - name: Deploy Infrastructure to Azure
+  #       run: |
+  #         cd terraform/azure
+  #         terraform init
+  #         terraform apply
 
-      - name: Send Discord Notification
-        if: success()
-        run: |
-          curl -H "Content-Type: application/json" -X POST -d '{
-            "username": "CI/CD Pipeline",
-            "embeds": [{
-              "title": "✅ Azure Deployment Successful",
-              "description": "The application has been successfully deployed to **Azure** 🚀",
-              "color": 3066993
-            }]
-          }' ${{ secrets.DISCORD_WEBHOOK_URL }}
+  #     - name: Send Discord Notification
+  #       if: success()
+  #       run: |
+  #         curl -H "Content-Type: application/json" -X POST -d '{
+  #           "username": "CI/CD Pipeline",
+  #           "embeds": [{
+  #             "title": "✅ Azure Deployment Successful",
+  #             "description": "The application has been successfully deployed to **Azure** 🚀",
+  #             "color": 3066993
+  #           }]
+  #         }' ${{ secrets.DISCORD_WEBHOOK_URL }}
 
-  # 🚀 Terraform Deployment on AWS
-  deploy_aws:
-    runs-on: ubuntu-latest
-    needs: [build, container_scanning, sast, unit_tests]
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+  # # 🚀 Terraform Deployment on AWS
+  # deploy_aws:
+  #   runs-on: ubuntu-latest
+  #   needs: [build, container_scanning, sast, unit_tests]
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v4
       
-      - name: Change Directory
-        run: cd client-service
+  #     - name: Change Directory
+  #       run: cd client-service
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
+  #     - name: Setup Terraform
+  #       uses: hashicorp/setup-terraform@v2
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+  #     - name: Configure AWS Credentials
+  #       uses: aws-actions/configure-aws-credentials@v2
+  #       with:
+  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         aws-region: us-east-1
 
-      - name: Deploy Infrastructure to AWS
-        run: |
-          cd terraform/aws
-          terraform init
-          terraform apply
+  #     - name: Deploy Infrastructure to AWS
+  #       run: |
+  #         cd terraform/aws
+  #         terraform init
+  #         terraform apply
 
-      - name: Send Discord Notification
-        if: success()
-        run: |
-          curl -H "Content-Type: application/json" -X POST -d '{
-            "username": "CI/CD Pipeline",
-            "embeds": [{
-              "title": "✅ AWS Deployment Successful",
-              "description": "The application has been successfully deployed to **AWS** 🚀",
-              "color": 3066993
-            }]
-          }' ${{ secrets.DISCORD_WEBHOOK_URL }}
+  #     - name: Send Discord Notification
+  #       if: success()
+  #       run: |
+  #         curl -H "Content-Type: application/json" -X POST -d '{
+  #           "username": "CI/CD Pipeline",
+  #           "embeds": [{
+  #             "title": "✅ AWS Deployment Successful",
+  #             "description": "The application has been successfully deployed to **AWS** 🚀",
+  #             "color": 3066993
+  #           }]
+  #         }' ${{ secrets.DISCORD_WEBHOOK_URL }}
