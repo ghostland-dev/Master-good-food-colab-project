@@ -1,19 +1,22 @@
-name: CI/CD Service Catalogue with Docker
+name: CI/CD DevSecOps Pipeline
 
 on:
   push:
     branches:
       - main
-    paths:
-      - 'catalogue-service/**'
+    paths: 
+      - "catalogue-service/**"
   pull_request:
     branches:
       - main
-    paths:
-      - 'catalogue-service/**'
+    paths: 
+      - "catalogue-service/**"
 
 env:
   IMAGE_NAME: ghcr.io/stanislasthbd/goodfood/service-catalogue
+  TF_CLI_ARGS_apply: "-auto-approve"
+  TF_CLI_ARGS_destroy: "-auto-approve"
+
 
 jobs:
   build:
@@ -64,6 +67,7 @@ jobs:
         run: |
           docker push ${{ env.IMAGE_NAME }}:latest  # ✅ Push correct tags
           docker push ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
 
 
   # # 🛡️ Security Scans using Trivy
