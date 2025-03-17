@@ -18,20 +18,20 @@ env:
   TF_CLI_ARGS_destroy: "-auto-approve"
 
 jobs:
-
   # 🏗️ Build & Push Docker Image
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-      - working-directory: client-service
+        
       - name: Login to GitHub Container Registry
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
-      - name: Get Dockerfile from the repository 
+  
       - name: Build Docker Image
+        working-directory: client-service
         run: docker build -t ${{ env.IMAGE_NAME }}:latest .
-
+  
       - name: Push Docker Image to GHCR
         run: docker push ${{ env.IMAGE_NAME }}:latest
 
