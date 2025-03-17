@@ -51,15 +51,19 @@ jobs:
       - name: Build and push Docker image
         working-directory: client-service
         run: docker build -t ${{ env.IMAGE_NAME }}:latest .
-      - name: test
+      - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
-          context: .
+          # Le répertoire qui contient le code ET le Dockerfile
+          context: ./client-service
+          # Nom du fichier Dockerfile (s’il s’appelle "Dockerfile", vous pouvez omettre cette ligne)
+          file: ./client-service/Dockerfile
           push: true
           tags: ${{ env.IMAGE_NAME }}:latest
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.description=Client Service for GoodFood
+      
 
   # 🛡️ Security Scans using Trivy
   container_scanning:
