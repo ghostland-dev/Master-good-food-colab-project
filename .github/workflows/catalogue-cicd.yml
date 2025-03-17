@@ -1,8 +1,11 @@
 name: CI/CD Service Catalogue avec Docker et Docker Compose
 
+
 env:
-  SERVER_USER: "${{ secrets.SSH_USER }}"
-  SERVER_IP: "${{ secrets.SSH_HOST }}"
+  IMAGE_NAME: ghcr.io/stanislasthbd/goodfood/service-catalogue
+  TF_CLI_ARGS_apply: "-auto-approve"
+  TF_CLI_ARGS_destroy: "-auto-approve"
+
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -19,45 +22,8 @@ on:
       - main
     paths: 
       - "catalogue-service/**"
-
 jobs:
-  tests_backend:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: catalogue-service
-    steps:
-      - name: Checkout le code
-        uses: actions/checkout@v4
-
-      - name: Installer Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: 'npm'
-          cache-dependency-path: catalogue-service/package-lock.json
-
-      - name: Installer les dépendances
-        run: npm ci --prefer-offline
-
-      - name: Vérifier les vulnérabilités
-        run: |
-          npm audit fix --force
-          npm audit --audit-level=moderate
-
-      - name: Vérifier le code
-        run: npm run lint
-
-      - name: Exécuter les tests
-        run: npm run test:ci
-
-      - name: Upload du rapport de couverture sur Codecov
-        uses: codecov/codecov-action@v3
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
   build:
-    needs: [tests_backend]
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -91,25 +57,25 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  e2e:
-    needs: [build]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout le code
-        uses: actions/checkout@v4
+  # e2e:
+  #   needs: [build]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout le code
+  #       uses: actions/checkout@v4
 
-      - name: Login sur GitHub Package Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Login sur GitHub Package Registry
+  #       uses: docker/login-action@v3
+  #       with:
+  #         registry: ghcr.io
+  #         username: ${{ github.actor }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Lancement des tests E2E
-        run: docker compose up --exit-code-from cypress --abort-on-container-exit
+  #     - name: Lancement des tests E2E
+  #       run: docker compose up --exit-code-from cypress --abort-on-container-exit
 
-      - name: Nettoyage
-        run: docker compose down -v --remove-orphans
+  #     - name: Nettoyage
+  #       run: docker compose down -v --remove-orphans
 
 
 

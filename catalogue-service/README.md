@@ -66,7 +66,7 @@ If you are looking for a cloud-based platform to deploy your NestJS application,
 
 ```bash
 $ npm install -g mau
-$ mau deploy
+$ mau deploy   
 ```    
 
 
