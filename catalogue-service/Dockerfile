@@ -11,7 +11,7 @@ COPY package*.json ./
 RUN npm install --only=production
 
 # Copy the rest of the application
-COPY . .
+COPY ./catalogue-service/* .
 
 # Build the NestJS application
 RUN npm run build
