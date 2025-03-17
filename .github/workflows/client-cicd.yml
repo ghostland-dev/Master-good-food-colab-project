@@ -25,15 +25,12 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-      
-      - name: Change Directory
-        working-directory: client-service
-        run: docker build -t ${{ env.IMAGE_NAME }}:latest .
 
       - name: Login to GitHub Container Registry
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
       - name: Build Docker Image
+        working-directory: client-service
         run: docker build -t ${{ env.IMAGE_NAME }}:latest .
 
       - name: Push Docker Image to GHCR
