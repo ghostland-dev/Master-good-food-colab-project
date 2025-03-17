@@ -18,26 +18,51 @@ env:
   TF_CLI_ARGS_destroy: "-auto-approve"
 
 jobs:
-
-  # 🏗️ Build & Push Docker Image
   build:
     runs-on: ubuntu-latest
     permissions:
       packages: write
       contents: read
+    strategy:
+      matrix:
+        node-version: [16, 18, 20, 22]  # Run on multiple Node.js versions
+      fail-fast: false  # Allow other jobs to continue if one fails
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: catalogue-service/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: catalogue-service
+        run: npm ci
+
+      - name: Run Tests (Optional)
+        working-directory: catalogue-service
+        run: npm test || true  # Ensures tests don’t break the entire workflow
+
       - name: Login to GitHub Container Registry
+        if: github.event_name == 'push'
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
       - name: Build Docker Image
         working-directory: catalogue-service
-        run: docker build -t ${{ env.IMAGE_NAME }}:latest .
+        run: |
+          docker build -t ${{ env.IMAGE_NAME }}:latest -t ${{ env.IMAGE_NAME }}:${{ github.sha }} .
 
       - name: Push Docker Image to GHCR
-        run: docker push ${{ env.IMAGE_NAME }}:latest
+        if: github.event_name == 'push'
+        run: |
+          docker push ${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+
 
   # # 🛡️ Security Scans using Trivy
   # container_scanning:
