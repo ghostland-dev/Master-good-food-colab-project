@@ -25,13 +25,12 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-      - name: Change Directory
-        run: cd catalogue-service
 
       - name: Login to GitHub Container Registry
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
       - name: Build Docker Image
+        working-directory: catalogue-service
         run: docker build -t ${{ env.IMAGE_NAME }}:latest .
 
       - name: Push Docker Image to GHCR
@@ -54,13 +53,16 @@ jobs:
   sast:
     runs-on: ubuntu-latest
     steps:
-      - name: Change Directory
-        run: cd catalogue-service
+      - name: Checkout Repository
+        uses: actions/checkout@v4
       - name: Run SAST Scan
         uses: github/codeql-action/init@v2
         with:
           languages: javascript
-      - run: github/codeql-action/analyze@v2
+      - name: Analyze Code
+        working-directory: catalogue-service
+        run: github/codeql-action/analyze@v2
+
 
   # 🛡️ Secret Detection
   secret_detection:
@@ -68,6 +70,9 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+      - name: Run Secret Detection
+        working-directory: catalogue-service
+        run: echo "Running secret detection"
       - name: Run Secret Detection
         uses: zricethezav/gitleaks-action@v2
         with:
@@ -82,8 +87,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Change Directory
-        run: cd catalogue-service
+      - name: Run Secret Detection
+        working-directory: catalogue-service
+        run: echo "Dependency Scanning"
       - run: npm install
       - run: npm audit --audit-level=critical
 
@@ -91,6 +97,11 @@ jobs:
   dast:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Dynamic Application Security Testing (DAST)
+        working-directory: catalogue-service
+        run: echo "Dynamic Application Security Testing (DAST)"
       - name: Run OWASP ZAP DAST
         uses: zaproxy/action-full-scan@v0.10.0
         with:
@@ -107,8 +118,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Change Directory
-        run: cd catalogue-service
+      - name: Unit & Integration Tests
+        working-directory: catalogue-service
+        run: echo "Unit & Integration Tests"
 
       - name: Install Dependencies
         run: npm install
@@ -135,8 +147,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
       
-      - name: Change Directory
-        run: cd catalogue-service
+      - name: Unit & Integration Tests
+        working-directory: catalogue-service
+        run: echo "Terraform Deployment on Azure"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
