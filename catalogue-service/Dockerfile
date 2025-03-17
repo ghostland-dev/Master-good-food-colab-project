@@ -7,11 +7,14 @@ WORKDIR /app
 # Copy package.json and package-lock.json first to leverage Docker cache
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install --only=production
+# Install dependencies (including dev dependencies for the build)
+RUN npm install
 
 # Copy the rest of the application
 COPY . .
+
+# Ensure NestJS CLI is installed
+RUN npm install -g @nestjs/cli
 
 # Build the NestJS application
 RUN npm run build
