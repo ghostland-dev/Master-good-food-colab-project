@@ -1,25 +1,21 @@
 services:
-# gateway-services:
-#   build:
-#     context: gateway-service
-#     dockerfile: Dockerfile
-#   volumes:
-#     - ./gateway-service:/app
-#   env_file:
-#     - ./gateway-service/.env
-#   ports:
-#     - "8080:8080"
-#   networks:
-#     - shrp-ntwrk
-#   depends_on:
-#     auth-services:
-#       condition: service_healthy
-#     menu-services:
-#       condition: service_healthy
-#     client-services:
-#       condition: service_healthy
-#     franchise-services:
-#       condition: service_healthy
+  gateway:
+    build: ./gateway
+    container_name: api_gateway
+    restart: always
+    ports:
+      - "80:80"
+    networks:
+      - goodfood-network
+    depends_on:
+      auth-services:
+        condition: service_healthy
+      menu-services:
+        condition: service_healthy
+      client-service:
+        condition: service_healthy
+      franchise-services:
+        condition: service_healthy
 
 # auth-services:
 #   build:
@@ -30,7 +26,7 @@ services:
 #   env_file:
 #    -./auth-service/.env
 #   networks:
-#     - shrp-ntwrk
+#     - goodfood-network
 #   depends_on:
 #     auth-db:
 #       condition: service_healthy
@@ -39,17 +35,16 @@ services:
     build: ./catalogue-service
     volumes:
       - ./catalogue-service/:/app
-      - ./catalogue-service/app/node_modules
+      - /app/node_modules
     ports:
-      - ${APP_PORT}:${APP_PORT}
-    command: npm run start:dev
+      - "3333:3333"
     env_file:
-      - ./catalogue-service.env
+      - ./catalogue-service/.env
     depends_on:
       menu-mongodb:
         condition: service_healthy
 
-  client-services:
+  client-service:
     build:
       context: client-service
       dockerfile: Dockerfile
@@ -61,7 +56,7 @@ services:
     ports:
       - "3001:3000"
     networks:
-      - shrp-ntwrk
+      - goodfood-network
     depends_on:
       client-db:
         condition: service_healthy
@@ -77,7 +72,7 @@ services:
     ports:
       - "5000:8080"
     networks:
-      - shrp-ntwrk
+      - goodfood-network
     depends_on:
       franchise-db:
         condition: service_healthy
@@ -91,7 +86,7 @@ services:
 #   ports:
 #    - "5435:5432"
 #   networks:
-#     - shrp-ntwrk
+#     - goodfood-network
 
   menu-mongodb:
     image: mongo:latest
@@ -117,7 +112,7 @@ services:
     ports:
       - "5433:5432"
     networks:
-      - shrp-ntwrk
+      - goodfood-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready"]
       interval: 1s
@@ -133,7 +128,7 @@ services:
     ports:
       - "5435:5432"
     networks:
-      - shrp-ntwrk
+      - goodfood-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready"]
       interval: 1s
@@ -146,12 +141,12 @@ services:
     ports:
       - 8080:8080
     networks:
-      - shrp-ntwrk
+      - goodfood-network
 
 volumes:
   mongodb_data_container:
 
 networks:
-  shrp-ntwrk:
+  goodfood-network:
     driver: bridge
 

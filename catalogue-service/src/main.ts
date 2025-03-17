@@ -1,18 +1,24 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { Logger } from '@nestjs/common';
+import { Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Configuration Swagger
-  
+  app.connectMicroservice({
+    transport: Transport.RMQ,
+    options: {
+      urls: ['amqp://localhost:5672'],
+      queue: 'catalogue_queue',
+      queueOptions: {
+        durable: false,
+      },
+    },
+  });
 
-  // Ajout des validations globales
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
-
-  await app.listen(process.env.APP_PORT || 3000);
+  await app.startAllMicroservices();
+  await app.listen(3000);
+  Logger.log('Catalogue Microservice is running on port 3000');
 }
-
 bootstrap();
