@@ -13,7 +13,7 @@ on:
       - "client-service/**"
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}/client-service
+  IMAGE_NAME: ghcr.io/stanislasthbd/goodfood/client-service
   TF_CLI_ARGS_apply: "-auto-approve"
   TF_CLI_ARGS_destroy: "-auto-approve"
 
