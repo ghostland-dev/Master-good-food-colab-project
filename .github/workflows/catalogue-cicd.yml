@@ -1,4 +1,12 @@
-name: CI/CD DevSecOps Pipeline
+name: CI/CD Service Catalogue avec Docker et Docker Compose
+
+env:
+  SERVER_USER: "${{ secrets.SSH_USER }}"
+  SERVER_IP: "${{ secrets.SSH_HOST }}"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 on:
   push:
@@ -12,55 +20,96 @@ on:
     paths: 
       - "catalogue-service/**"
 
-env:
-  IMAGE_NAME: ghcr.io/stanislasthbd/goodfood/service-catalogue
-  TF_CLI_ARGS_apply: "-auto-approve"
-  TF_CLI_ARGS_destroy: "-auto-approve"
-
 jobs:
+  tests_backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: catalogue-service
+    steps:
+      - name: Checkout le code
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: catalogue-service/package-lock.json
+
+      - name: Installer les dépendances
+        run: npm ci --prefer-offline
+
+      - name: Vérifier les vulnérabilités
+        run: |
+          npm audit fix --force
+          npm audit --audit-level=moderate
+
+      - name: Vérifier le code
+        run: npm run lint
+
+      - name: Exécuter les tests
+        run: npm run test:ci
+
+      - name: Upload du rapport de couverture sur Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
   build:
+    needs: [tests_backend]
     runs-on: ubuntu-latest
     permissions:
       packages: write
       contents: read
-    strategy:
-      matrix:
-        node-version: [16, 18, 20, 22]  # Run on multiple Node.js versions
-      fail-fast: false  # Allow other jobs to continue if one fails
-
     steps:
-      - name: Checkout Repository
+      - name: Checkout le code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Mise en place de Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login sur GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: catalogue-service/package-lock.json
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Dependencies
-        working-directory: catalogue-service
-        run: npm ci
+      - name: Récupération des métadonnées
+        id: metadata
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/stanislasthbd/goodfood/service-catalogue
 
-      - name: Run Tests (Optional)
-        working-directory: catalogue-service
-        run: npm test || true  # Ensures tests don’t break the entire workflow
+      - name: Build et push de l'image
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: ghcr.io/stanislasthbd/goodfood/service-catalogue:latest
+          context: ./catalogue-service
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Login to GitHub Container Registry
-        if: github.event_name == 'push'
-        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+  e2e:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout le code
+        uses: actions/checkout@v4
 
-      - name: Build Docker Image
-        working-directory: catalogue-service
-        run: |
-          docker build -t ${{ env.IMAGE_NAME }}:latest -t ${{ env.IMAGE_NAME }}:${{ github.sha }} .
+      - name: Login sur GitHub Package Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push Docker Image to GHCR
-        if: github.event_name == 'push'
-        run: |
-          docker push ${{ env.IMAGE_NAME }}:latest
-          docker push ${{ env.IMAGE_NAME }}:${{ github.sha }}
+      - name: Lancement des tests E2E
+        run: docker compose up --exit-code-from cypress --abort-on-container-exit
+
+      - name: Nettoyage
+        run: docker compose down -v --remove-orphans
 
 
 
