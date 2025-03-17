@@ -1,15 +1,19 @@
-name: CI/CD DevSecOps Pipeline for ASP.NET 8 Microservice
+name: CI/CD DevSecOps Pipeline
 
 on:
   push:
     branches:
       - main
+    paths: 
+      - "catalogue-service/**"
   pull_request:
     branches:
       - main
+    paths: 
+      - "catalogue-service/**"
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}/franchise-service
+  IMAGE_NAME: ghcr.io/${{ github.repository }}/service-catalogue
   TF_CLI_ARGS_apply: "-auto-approve"
   TF_CLI_ARGS_destroy: "-auto-approve"
 
@@ -21,26 +25,14 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '8.0'
-
-      - name: Restore Dependencies
-        run: dotnet restore FranchiseService/Franchise.API/Franchise.API.csproj
-
-      - name: Build Solution
-        run: dotnet build --configuration Release --no-restore
-
-      - name: Publish Application
-        run: dotnet publish FranchiseService/Franchise.API/Franchise.API.csproj -c Release -o ./publish
+      - name: Change Directory
+        run: cd catalogue-service
 
       - name: Login to GitHub Container Registry
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
       - name: Build Docker Image
-        run: docker build -t ${{ env.IMAGE_NAME }}:latest -f FranchiseService/Franchise.API/Dockerfile .
+        run: docker build -t ${{ env.IMAGE_NAME }}:latest .
 
       - name: Push Docker Image to GHCR
         run: docker push ${{ env.IMAGE_NAME }}:latest
@@ -62,16 +54,20 @@ jobs:
   sast:
     runs-on: ubuntu-latest
     steps:
+      - name: Change Directory
+        run: cd catalogue-service
       - name: Run SAST Scan
         uses: github/codeql-action/init@v2
         with:
-          languages: csharp
+          languages: javascript
       - run: github/codeql-action/analyze@v2
 
   # 🛡️ Secret Detection
   secret_detection:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
       - name: Run Secret Detection
         uses: zricethezav/gitleaks-action@v2
         with:
@@ -83,7 +79,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run Dependency Check
-        run: dotnet list package --vulnerable
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Change Directory
+        run: cd catalogue-service
+      - run: npm install
+      - run: npm audit --audit-level=critical
 
   # 🔬 Dynamic Application Security Testing (DAST)
   dast:
@@ -92,7 +94,7 @@ jobs:
       - name: Run OWASP ZAP DAST
         uses: zaproxy/action-full-scan@v0.10.0
         with:
-          target: "http://localhost:5000"
+          target: "http://localhost:3000"
 
   # ✅ Unit & Integration Tests
   unit_tests:
@@ -101,26 +103,29 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          dotnet-version: '8.0'
+          node-version: 22
+      - name: Change Directory
+        run: cd catalogue-service
+
+      - name: Install Dependencies
+        run: npm install
 
       - name: Run Unit Tests
-        run: dotnet test --logger trx --results-directory ./TestResults
-
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-results
-          path: ./TestResults
+        run: npm test
 
   # 📊 Code Quality Analysis
   code_quality:
     runs-on: ubuntu-latest
     steps:
-      - name: Run .NET Code Quality Analysis
-        run: dotnet format --verify-no-changes || exit 0
+      - name: Change Directory
+        run: cd catalogue-service
+      - name: Run ESLint & Prettier
+        run: |
+          npm run lint
+          npm run format
 
   # 🚀 Terraform Deployment on Azure
   deploy_azure:
@@ -129,6 +134,9 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+      
+      - name: Change Directory
+        run: cd catalogue-service
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
@@ -163,15 +171,18 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Change Directory
+        run: cd catalogue-service
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
-      # - name: Configure AWS Credentials
-      #   uses: aws-actions/configure-aws-credentials@v2
-      #   with:
-      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      #     region: us-east-1
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
       - name: Deploy Infrastructure to AWS
         run: |
