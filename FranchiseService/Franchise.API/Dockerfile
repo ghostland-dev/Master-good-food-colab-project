@@ -3,10 +3,10 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
 # Monter d'un niveau pour récupérer les autres projets
-COPY ../Franchise.API/*.csproj ./Franchise.API/
-COPY ../Franchise.Data/*.csproj ./Franchise.Data/
-COPY ../Franchise.Domain/*.csproj ./Franchise.Domain/
-COPY ../Franchise.Services/*.csproj ./Franchise.Services/
+COPY ./*.csproj ./Franchise.API/
+COPY ./../Franchise.Data/*.csproj ./Franchise.Data/
+COPY ./../Franchise.Domain/*.csproj ./Franchise.Domain/
+COPY ./../Franchise.Services/*.csproj ./Franchise.Services/
 
 # Restaurer les dépendances
 RUN dotnet restore ./Franchise.API/Franchise.API.csproj
