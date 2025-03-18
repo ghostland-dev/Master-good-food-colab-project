@@ -1,6 +1,359 @@
+# # name: CI/CD DevSecOps Pipeline for Client Service
+
+# # permissions:
+# #   contents: read
+# #   packages: read
+
+# # on:
+# #   push:
+# #     branches:
+# #       - main
+# #     paths: 
+# #       - "client-service/**"
+# #   pull_request:
+# #     branches:
+# #       - main
+# #     paths:
+# #       - "client-service/**"
+
+# # env:
+# #   IMAGE_NAME: ghcr.io/stanislasthbd/goodfood/client-service
+# #   TF_CLI_ARGS_apply: "-auto-approve"
+# #   TF_CLI_ARGS_destroy: "-auto-approve"
+
+# # jobs:
+
+# #   # 🏗️ Build & Push Docker Image
+# #   build:
+# #     runs-on: ubuntu-latest
+# #     steps:
+# #       - name: Check out repository
+# #         uses: actions/checkout@v4
+
+# #       - name: Log in to GitHub Container Registry
+# #         uses: docker/login-action@v2
+# #         with:
+# #           registry: ghcr.io
+# #           username: ${{ secrets.GHCR_USERNAME }}
+# #           password: ${{ secrets.GHCR_TOKEN }}
+
+# #       - name: Build and push Docker image
+# #         uses: docker/build-push-action@v4
+# #         with:
+# #           # Le répertoire qui contient le code ET le Dockerfile
+# #           context: ./client-service
+# #           # Nom du fichier Dockerfile (s’il s’appelle "Dockerfile", vous pouvez omettre cette ligne)
+# #           file: ./client-service/Dockerfile
+# #           push: true
+# #           tags: ${{ env.IMAGE_NAME }}:latest
+# #           labels: |
+# #             org.opencontainers.image.source=https://github.com/${{ github.repository }}
+# #             org.opencontainers.image.description=Client Service for GoodFood
+      
+
+# #   # 🛡️ Security Scans using Trivy
+# #   container_scanning:
+# #     needs: build
+# #     runs-on: ubuntu-latest
+# #     steps:
+# #       - name: Check out repository
+# #         uses: actions/checkout@v4
+
+# #       - name: Log in to GitHub Container Registry
+# #         uses: docker/login-action@v2
+# #         with:
+# #           registry: ghcr.io
+# #           username: ${{ secrets.GHCR_USERNAME }}
+# #           password: ${{ secrets.GHCR_TOKEN }}
+
+# #       - name: Pull Docker image
+# #         run: docker pull ${{ env.IMAGE_NAME }}:latest
+
+# #       - name: Run Trivy Scan on Docker Image
+# #         uses: aquasecurity/trivy-action@master
+# #         with:
+# #           image-ref: "${{ env.IMAGE_NAME }}:latest"
+# #           format: "table"
+# #           exit-code: "1"
+# #           severity: "CRITICAL"
+
+
+
+# #   # 🔍 SAST - Static Application Security Testing
+# #   # sast:
+# #   #   runs-on: ubuntu-latest
+# #   #   steps:
+# #   #     - name: Change Directory
+# #   #       run: cd client-service
+
+# #   #     - name: Run SAST Scan
+# #   #       uses: github/codeql-action/init@v2
+# #   #       with:
+# #   #         languages: javascript
+# #   #     - run: github/codeql-action/analyze@v2
+
+# #   # # 🛡️ Secret Detection
+# #   # secret_detection:
+# #   #   runs-on: ubuntu-latest
+# #   #   steps:
+# #   #     - name: Checkout Repository
+# #   #       uses: actions/checkout@v4
+      
+# #   #     - name: Change Directory
+# #   #       run: cd client-service
+
+# #   #     - name: Run Secret Detection
+# #   #       uses: zricethezav/gitleaks-action@v2
+# #   #       with:
+# #   #         config-path: ".github/gitleaks.toml"
+# #   #         fail: "true"
+
+# #   # # 📦 Dependency Scanning
+# #   # dependency_scanning:
+# #   #   runs-on: ubuntu-latest
+# #   #   steps:
+# #   #     - name: Run Dependency Check
+# #   #       uses: actions/setup-node@v4
+# #   #       with:
+# #   #         node-version: 20
+# #   #     - name: Change Directory
+# #   #       run: cd client-service
+# #   #     - run: npm install
+# #   #     - run: npm audit --audit-level=critical
+
+# #   # # 🔬 Dynamic Application Security Testing (DAST)
+# #   # dast:
+# #   #   runs-on: ubuntu-latest
+# #   #   steps:
+# #   #     - name: Change Directory
+# #   #       run: cd client-service
+# #   #     - name: Run OWASP ZAP DAST
+# #   #       uses: zaproxy/action-full-scan@v0.10.0
+# #   #       with:
+# #   #         target: "http://localhost:3000"
+
+# #   # # ✅ Unit & Integration Tests
+# #   # unit_tests:
+# #   #   runs-on: ubuntu-latest
+# #   #   steps:
+# #   #     - name: Checkout Repository
+# #   #       uses: actions/checkout@v4
+      
+# #   #     - name: Change Directory
+# #   #       run: cd client-service
+
+# #   #     - name: Setup Node.js
+# #   #       uses: actions/setup-node@v4
+# #   #       with:
+# #   #         node-version: 20
+
+# #   #     - name: Install Dependencies
+# #   #       run: npm install
+
+# #   #     - name: Run Unit Tests
+# #   #       run: npm test
+
+# #   # # 📊 Code Quality Analysis
+# #   # code_quality:
+# #   #   runs-on: ubuntu-latest
+# #   #   steps:
+# #   #     - name: Change Directory
+# #   #       run: cd client-service
+# #   #     - name: Run ESLint & Prettier
+# #   #       run: |
+# #   #         npm run lint || true
+# #   #         npm run format || true
+
+# #   # 🚀 Terraform Deployment on Azure
+# #   deploy_azure:
+# #     runs-on: ubuntu-latest
+# #     # needs: [build, container_scanning, sast, unit_tests]
+# #     needs: [build, container_scanning]
+# #     steps:
+# #       - name: Checkout Repository
+# #         uses: actions/checkout@v4
+      
+# #       - name: Change Directory
+# #         run: cd catalogue-service
+
+# #       - name: Setup Terraform
+# #         uses: hashicorp/setup-terraform@v2
+
+# #       - name: Login to Azure
+# #         run: |
+# #           az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+
+# #       - name: Deploy Infrastructure to Azure
+# #         run: |
+# #           cd terraform/azure
+# #           terraform init
+# #           terraform apply
+
+# #       - name: Send Discord Notification
+# #         if: success()
+# #         run: |
+# #           curl -H "Content-Type: application/json" -X POST -d '{
+# #             "username": "CI/CD Pipeline",
+# #             "embeds": [{
+# #               "title": "✅ Azure Deployment Successful",
+# #               "description": "The application has been successfully deployed to **Azure** 🚀",
+# #               "color": 3066993
+# #             }]
+# #           }' ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+# #   # # 🚀 Terraform Deployment on AWS
+# #   # deploy_aws:
+# #   #   runs-on: ubuntu-latest
+# #   #   needs: [build, container_scanning, sast, unit_tests]
+# #   #   steps:
+# #   #     - name: Checkout Repository
+# #   #       uses: actions/checkout@v4
+      
+# #   #     - name: Change Directory
+# #   #       run: cd client-service
+
+# #   #     - name: Setup Terraform
+# #   #       uses: hashicorp/setup-terraform@v2
+
+# #   #     - name: Configure AWS Credentials
+# #   #       uses: aws-actions/configure-aws-credentials@v2
+# #   #       with:
+# #   #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+# #   #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+# #   #         aws-region: us-east-1
+
+# #   #     - name: Deploy Infrastructure to AWS
+# #   #       run: |
+# #   #         cd terraform/aws
+# #   #         terraform init
+# #   #         terraform apply
+
+# #   #     - name: Send Discord Notification
+# #   #       if: success()
+# #   #       run: |
+# #   #         curl -H "Content-Type: application/json" -X POST -d '{
+# #   #           "username": "CI/CD Pipeline",
+# #   #           "embeds": [{
+# #   #             "title": "✅ AWS Deployment Successful",
+# #   #             "description": "The application has been successfully deployed to **AWS** 🚀",
+# #   #             "color": 3066993
+# #   #           }]
+# #   #         }' ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+
+# name: CI/CD DevSecOps Pipeline for Client Service
+
+# permissions:
+#   contents: read
+#   packages: read
+
+# on:
+#   push:
+#     branches:
+#       - main
+#     paths: 
+#       - "client-service/**"
+#   pull_request:
+#     branches:
+#       - main
+#     paths:
+#       - "client-service/**"
+
+# env:
+#   IMAGE_NAME: ghcr.io/stanislasthbd/goodfood/client-service
+#   TF_CLI_ARGS_apply: "-auto-approve"
+#   TF_CLI_ARGS_destroy: "-auto-approve"
+
+# jobs:
+#   # 🏗️ Build & Push Docker Image
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Check out repository
+#         uses: actions/checkout@v4
+
+#       - name: Log in to GitHub Container Registry
+#         uses: docker/login-action@v2
+#         with:
+#           registry: ghcr.io
+#           username: ${{ secrets.GHCR_USERNAME }}
+#           password: ${{ secrets.GHCR_TOKEN }}
+
+#       - name: Build and push Docker image
+#         uses: docker/build-push-action@v4
+#         with:
+#           context: ./client-service
+#           file: ./client-service/Dockerfile
+#           push: true
+#           tags: ${{ env.IMAGE_NAME }}:latest
+#           labels: |
+#             org.opencontainers.image.source=https://github.com/${{ github.repository }}
+#             org.opencontainers.image.description=Client Service for GoodFood
+
+#   # 🛡️ Security Scans using Trivy
+#   container_scanning:
+#     needs: build
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Check out repository
+#         uses: actions/checkout@v4
+
+#       - name: Log in to GitHub Container Registry
+#         uses: docker/login-action@v2
+#         with:
+#           registry: ghcr.io
+#           username: ${{ secrets.GHCR_USERNAME }}
+#           password: ${{ secrets.GHCR_TOKEN }}
+
+#       - name: Pull Docker image
+#         run: docker pull ${{ env.IMAGE_NAME }}:latest
+
+#       - name: Run Trivy Scan on Docker Image
+#         uses: aquasecurity/trivy-action@master
+#         with:
+#           image-ref: "${{ env.IMAGE_NAME }}:latest"
+#           format: "table"
+#           exit-code: "1"
+#           severity: "CRITICAL"
+
+#   # 🚀 Déploiement sur Azure avec Terraform
+#   deploy_azure:
+#     runs-on: ubuntu-latest
+#     needs: [build, container_scanning]
+#     steps:
+#       - name: Checkout Repository
+#         uses: actions/checkout@v4
+      
+#       - name: Setup Terraform
+#         uses: hashicorp/setup-terraform@v2
+
+#       - name: Login to Azure
+#         run: |
+#           az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+
+#       - name: Deploy Infrastructure to Azure
+#         run: |
+#           cd terraform/azure
+#           terraform init
+#           terraform apply
+
+#       - name: Send Discord Notification
+#         if: success()
+#         run: |
+#           curl -H "Content-Type: application/json" -X POST -d '{
+#             "username": "CI/CD Pipeline",
+#             "embeds": [{
+#               "title": "✅ Azure Deployment Successful",
+#               "description": "L’application Client Service a été déployée sur **Azure** 🚀",
+#               "color": 3066993
+#             }]
+#           }' ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+
 name: CI/CD DevSecOps Pipeline for Client Service
 
 permissions:
+  id-token: write  # 🔥 Requis pour OIDC avec Azure
   contents: read
   packages: read
 
@@ -20,9 +373,12 @@ env:
   IMAGE_NAME: ghcr.io/stanislasthbd/goodfood/client-service
   TF_CLI_ARGS_apply: "-auto-approve"
   TF_CLI_ARGS_destroy: "-auto-approve"
+  AZURE_SUBSCRIPTION_ID: "ae835d5b-9e8f-485b-a549-6151f46f0609"  # Remplacez par votre Subscription ID
+  GHCR_USERNAME: "stanislasthbd"
+  GHCR_TOKEN: "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"
+  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
 
 jobs:
-
   # 🏗️ Build & Push Docker Image
   build:
     runs-on: ubuntu-latest
@@ -40,148 +396,32 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
-          # Le répertoire qui contient le code ET le Dockerfile
           context: ./client-service
-          # Nom du fichier Dockerfile (s’il s’appelle "Dockerfile", vous pouvez omettre cette ligne)
           file: ./client-service/Dockerfile
           push: true
           tags: ${{ env.IMAGE_NAME }}:latest
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.description=Client Service for GoodFood
-      
 
-  # 🛡️ Security Scans using Trivy
-  container_scanning:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.GHCR_USERNAME }}
-          password: ${{ secrets.GHCR_TOKEN }}
-
-      - name: Pull Docker image
-        run: docker pull ${{ env.IMAGE_NAME }}:latest
-
-      - name: Run Trivy Scan on Docker Image
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: "${{ env.IMAGE_NAME }}:latest"
-          format: "table"
-          exit-code: "1"
-          severity: "CRITICAL"
-
-
-
-  # 🔍 SAST - Static Application Security Testing
-  # sast:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Change Directory
-  #       run: cd client-service
-
-  #     - name: Run SAST Scan
-  #       uses: github/codeql-action/init@v2
-  #       with:
-  #         languages: javascript
-  #     - run: github/codeql-action/analyze@v2
-
-  # # 🛡️ Secret Detection
-  # secret_detection:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout Repository
-  #       uses: actions/checkout@v4
-      
-  #     - name: Change Directory
-  #       run: cd client-service
-
-  #     - name: Run Secret Detection
-  #       uses: zricethezav/gitleaks-action@v2
-  #       with:
-  #         config-path: ".github/gitleaks.toml"
-  #         fail: "true"
-
-  # # 📦 Dependency Scanning
-  # dependency_scanning:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Run Dependency Check
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 20
-  #     - name: Change Directory
-  #       run: cd client-service
-  #     - run: npm install
-  #     - run: npm audit --audit-level=critical
-
-  # # 🔬 Dynamic Application Security Testing (DAST)
-  # dast:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Change Directory
-  #       run: cd client-service
-  #     - name: Run OWASP ZAP DAST
-  #       uses: zaproxy/action-full-scan@v0.10.0
-  #       with:
-  #         target: "http://localhost:3000"
-
-  # # ✅ Unit & Integration Tests
-  # unit_tests:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout Repository
-  #       uses: actions/checkout@v4
-      
-  #     - name: Change Directory
-  #       run: cd client-service
-
-  #     - name: Setup Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 20
-
-  #     - name: Install Dependencies
-  #       run: npm install
-
-  #     - name: Run Unit Tests
-  #       run: npm test
-
-  # # 📊 Code Quality Analysis
-  # code_quality:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Change Directory
-  #       run: cd client-service
-  #     - name: Run ESLint & Prettier
-  #       run: |
-  #         npm run lint || true
-  #         npm run format || true
-
-  # 🚀 Terraform Deployment on Azure
+  # 🚀 Déploiement sur Azure avec Terraform
   deploy_azure:
     runs-on: ubuntu-latest
-    # needs: [build, container_scanning, sast, unit_tests]
-    needs: [build, container_scanning]
+    needs: build
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
       
-      - name: Change Directory
-        run: cd catalogue-service
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
-      - name: Login to Azure
-        run: |
-          az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+      - name: Authenticate to Azure using OIDC  # 🔥 Authentification SANS secrets
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}  # 🔹 Défini dans Azure AD
+          tenant-id: "190ce420-b157-44ae-bc2f-69563baa5a3b"
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+          allow-no-subscriptions: true
 
       - name: Deploy Infrastructure to Azure
         run: |
@@ -196,46 +436,7 @@ jobs:
             "username": "CI/CD Pipeline",
             "embeds": [{
               "title": "✅ Azure Deployment Successful",
-              "description": "The application has been successfully deployed to **Azure** 🚀",
+              "description": "L’application Client Service a été déployée sur **Azure** 🚀",
               "color": 3066993
             }]
           }' ${{ secrets.DISCORD_WEBHOOK_URL }}
-
-  # # 🚀 Terraform Deployment on AWS
-  # deploy_aws:
-  #   runs-on: ubuntu-latest
-  #   needs: [build, container_scanning, sast, unit_tests]
-  #   steps:
-  #     - name: Checkout Repository
-  #       uses: actions/checkout@v4
-      
-  #     - name: Change Directory
-  #       run: cd client-service
-
-  #     - name: Setup Terraform
-  #       uses: hashicorp/setup-terraform@v2
-
-  #     - name: Configure AWS Credentials
-  #       uses: aws-actions/configure-aws-credentials@v2
-  #       with:
-  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         aws-region: us-east-1
-
-  #     - name: Deploy Infrastructure to AWS
-  #       run: |
-  #         cd terraform/aws
-  #         terraform init
-  #         terraform apply
-
-  #     - name: Send Discord Notification
-  #       if: success()
-  #       run: |
-  #         curl -H "Content-Type: application/json" -X POST -d '{
-  #           "username": "CI/CD Pipeline",
-  #           "embeds": [{
-  #             "title": "✅ AWS Deployment Successful",
-  #             "description": "The application has been successfully deployed to **AWS** 🚀",
-  #             "color": 3066993
-  #           }]
-  #         }' ${{ secrets.DISCORD_WEBHOOK_URL }}
