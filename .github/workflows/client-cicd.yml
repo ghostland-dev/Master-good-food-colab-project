@@ -1,5 +1,9 @@
 name: CI/CD DevSecOps Pipeline for Client Service
 
+permissions:
+  contents: read
+  packages: read
+
 on:
   push:
     branches:
