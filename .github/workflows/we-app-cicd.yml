@@ -1,0 +1,63 @@
+name: CI/CD Pipeline for Web App Service
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "web-app/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "web-app/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  packages: read
+
+env:
+  IMAGE_NAME: ghcr.io/stanislasthbd/goodfood/web-app
+  TF_CLI_ARGS_apply: "-auto-approve"
+  TF_CLI_ARGS_destroy: "-auto-approve"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_USERNAME }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build and Push Docker Image
+        working-directory: ./web-app
+        run: |
+          docker build -t ${{ env.IMAGE_NAME }}:latest -f ./Dockerfile ./web-app
+          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
+          docker push ${{ env.IMAGE_NAME }}:latest
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure Container Apps
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}/web-app
+          registryUrl: ghcr.io
+          registryUsername: ${{ secrets.AZURE_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
+          containerAppName: web-app-service
+          resourceGroup: myResourceGroup
+          imageToBuild: ghcr.io/stanislasthbd/goodfood/web-app:${{ github.sha }}
