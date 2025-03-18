@@ -1,32 +1,33 @@
-name: CI/CD Pipeline for Web App Service
+name: CI/CD DevSecOps Pipeline for Web App Service
+
+permissions:
+  contents: write
+  packages: write
 
 on:
   push:
     branches:
       - main
-    paths:
+    paths: 
       - "app-web/**"
   pull_request:
     branches:
       - main
     paths:
       - "app-web/**"
-      
-permissions:
-  contents: read
-  id-token: write
-  packages: read
 
 env:
-  IMAGE_NAME: ghcr.io/stanislasthbd/goodfood/app-web
+  IMAGE_NAME: ghcr.io/goodfood-maalsi2/goodfood/app-web
   TF_CLI_ARGS_apply: "-auto-approve"
   TF_CLI_ARGS_destroy: "-auto-approve"
 
 jobs:
-  build-and-deploy:
+
+  # 🏗️ Build & Push Docker Image
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Check out repository
         uses: actions/checkout@v4
 
       - name: Log in to GitHub Container Registry
@@ -36,27 +37,33 @@ jobs:
           username: ${{ secrets.GHCR_USERNAME }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Build and Push Docker Image
-        working-directory: ./app-web
-        run: |
-          docker build -t ${{ env.IMAGE_NAME }}:latest ./app-web -f ./app-web/Dockerfile
-          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
-          docker push ${{ env.IMAGE_NAME }}:latest
-
-      - name: Azure Login
-        uses: azure/login@v1
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          # Le répertoire qui contient le code ET le Dockerfile
+          context: ./app-web
+          # Nom du fichier Dockerfile (s’il s’appelle "Dockerfile", vous pouvez omettre cette ligne)
+          file: ./app-web/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=App Web 
 
-      - name: Deploy to Azure Container Apps
-        uses: azure/container-apps-deploy-action@v2
-        with:
-          appSourcePath: ${{ github.workspace }}/app-web
-          registryUrl: ghcr.io
-          registryUsername: ${{ secrets.AZURE_REGISTRY_USERNAME }}
-          registryPassword: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
-          containerAppName: app-web-service
-          resourceGroup: myResourceGroup
-          imageToBuild: ghcr.io/stanislasthbd/goodfood/app-web:${{ github.sha }}
+      # - name: Azure Login
+      #   uses: azure/login@v1
+      #   with:
+      #     client-id: ${{ secrets.AZURE_CLIENT_ID }}
+      #     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+      #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # - name: Deploy to Azure Container Apps
+      #   uses: azure/container-apps-deploy-action@v2
+      #   with:
+      #     appSourcePath: ${{ github.workspace }}/app-web
+      #     registryUrl: ghcr.io
+      #     registryUsername: ${{ secrets.AZURE_REGISTRY_USERNAME }}
+      #     registryPassword: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
+      #     containerAppName: app-web-service
+      #     resourceGroup: myResourceGroup
+      #     imageToBuild: ghcr.io/goodfood-maalsi2/goodfood/app-web:${{ github.sha }}
