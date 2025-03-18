@@ -1,28 +1,27 @@
-# �tape 1 : Build de l'application avec .NET 8
+# Étape 1 : Build de l'application avec .NET 8
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
-# Copier seulement les fichiers de projet pour optimiser la mise en cache
-COPY FranchiseService/Franchise.API/*.csproj ./FranchiseService/Franchise.API/
-COPY FranchiseService/Franchise.Data/*.csproj ./FranchiseService/Franchise.Data/
-COPY FranchiseService/Franchise.Domain/*.csproj ./FranchiseService/Franchise.Domain/
-COPY FranchiseService/Franchise.Services/*.csproj ./FranchiseService/Franchise.Services/
+# Monter d'un niveau pour récupérer les autres projets
+COPY ../Franchise.API/*.csproj ./Franchise.API/
+COPY ../Franchise.Data/*.csproj ./Franchise.Data/
+COPY ../Franchise.Domain/*.csproj ./Franchise.Domain/
+COPY ../Franchise.Services/*.csproj ./Franchise.Services/
 
-# Restaurer les d�pendances
-RUN dotnet restore ./FranchiseService/Franchise.API/Franchise.API.csproj
+# Restaurer les dépendances
+RUN dotnet restore ./Franchise.API/Franchise.API.csproj
 
-# Copier le reste des fichiers et publier
-COPY . . 
-WORKDIR /app/FranchiseService/Franchise.API
+# Copier tout le reste des fichiers et compiler
+COPY ../ .
+WORKDIR /app/Franchise.API
 RUN dotnet publish -c Release -o /app/out
 
-# �tape 2 : Runtime
+# Étape 2 : Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 
-# Copier les fichiers de publication
+# Copier les fichiers publiés
 COPY --from=build /app/out .
 
-# Ex�cuter les migrations avant de lancer l'API
-CMD ["sh", "-c", "dotnet Franchise.API.dll"]
-
+# Lancer l'application
+CMD ["dotnet", "Franchise.API.dll"]
