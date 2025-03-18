@@ -9,7 +9,7 @@ async function bootstrap() {
   app.connectMicroservice({
     transport: Transport.RMQ,
     options: {
-      urls: ['amqp://localhost:5672'],
+      urls: [`amqp://${process.env.RABBITMQ_DEFAULT_USER}:${process.env.RABBITMQ_DEFAULT_PASS}@${process.env.RABBITMQ_HOST}:${process.env.RABBITMQ_PORT || 5672}`],
       queue: 'catalogue_queue',
       queueOptions: {
         durable: false,
@@ -19,6 +19,6 @@ async function bootstrap() {
 
   await app.startAllMicroservices();
   await app.listen(3000);
-  Logger.log('Catalogue Microservice is running on port 3000');
+  Logger.log('Catalogue Microservice is running on port 3002');
 }
 bootstrap();
