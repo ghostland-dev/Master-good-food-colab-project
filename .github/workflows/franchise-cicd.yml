@@ -41,15 +41,14 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           # Le répertoire qui contient le code ET le Dockerfile
-          context: ./FranchiseService
+          context: ./FranchiseService/Franchise.API
           # Nom du fichier Dockerfile (s’il s’appelle "Dockerfile", vous pouvez omettre cette ligne)
-          file: ./FranchiseService/Dockerfile
+          file: ./FranchiseService/Franchise.API/Dockerfile
           push: true
           tags: ${{ env.IMAGE_NAME }}:latest
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.description=Franchise Service for Good Food
-
             
   # # 🛡️ Security Scans using Trivy
   # container_scanning:
