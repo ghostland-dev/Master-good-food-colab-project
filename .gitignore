@@ -3,3 +3,5 @@ data
 .DS_Store
 client.env
 franchise.env
+node_modules
+dist
