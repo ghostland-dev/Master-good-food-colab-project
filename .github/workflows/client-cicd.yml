@@ -17,7 +17,7 @@ on:
       - "client-service/**"
 
 env:
-  IMAGE_NAME: ghcr.io/goodfood-maalsi2/goodfood/client-service
+  IMAGE_NAME: ghcr.io/ismail-mouyahada/goodfood/client-service
   TF_CLI_ARGS_apply: "-auto-approve"
   TF_CLI_ARGS_destroy: "-auto-approve"
 
