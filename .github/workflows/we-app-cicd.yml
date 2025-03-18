@@ -1,21 +1,20 @@
-name: CI/CD Pipeline for Web App Service
+name: CI/CD DevSecOps Pipeline for Web App Service
+
+permissions:
+  contents: write
+  packages: write
 
 on:
   push:
     branches:
       - main
-    paths:
+    paths: 
       - "app-web/**"
   pull_request:
     branches:
       - main
     paths:
       - "app-web/**"
-      
-permissions:
-  contents: read
-  id-token: write
-  packages: read
 
 env:
   IMAGE_NAME: ghcr.io/goodfood-maalsi2/goodfood/app-web
@@ -23,10 +22,12 @@ env:
   TF_CLI_ARGS_destroy: "-auto-approve"
 
 jobs:
-  build-and-deploy:
+
+  # 🏗️ Build & Push Docker Image
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Check out repository
         uses: actions/checkout@v4
 
       - name: Log in to GitHub Container Registry
@@ -36,12 +37,18 @@ jobs:
           username: ${{ secrets.GHCR_USERNAME }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Build and Push Docker Image
-        working-directory: ./app-web
-        run: |
-          docker build -t ${{ env.IMAGE_NAME }}:latest .
-          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
-          docker push ${{ env.IMAGE_NAME }}:latest
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          # Le répertoire qui contient le code ET le Dockerfile
+          context: ./app-web
+          # Nom du fichier Dockerfile (s’il s’appelle "Dockerfile", vous pouvez omettre cette ligne)
+          file: ./app-web/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=App Web 
 
       # - name: Azure Login
       #   uses: azure/login@v1
