@@ -18,7 +18,7 @@ permissions:
   packages: read
 
 env:
-  IMAGE_NAME: ghcr.io/stanislasthbd/goodfood/app-web
+  IMAGE_NAME: ghcr.io/goodFood-maalsi2/goodfood/app-web
   TF_CLI_ARGS_apply: "-auto-approve"
   TF_CLI_ARGS_destroy: "-auto-approve"
 
@@ -59,4 +59,4 @@ jobs:
           registryPassword: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
           containerAppName: app-web-service
           resourceGroup: myResourceGroup
-          imageToBuild: ghcr.io/stanislasthbd/goodfood/app-web:${{ github.sha }}
+          imageToBuild: ghcr.io/goodFood-maalsi2/goodfood/app-web:${{ github.sha }}
