@@ -349,11 +349,9 @@
 #             }]
 #           }' ${{ secrets.DISCORD_WEBHOOK_URL }}
 
-
-name: CI/CD DevSecOps Pipeline for Client Service
+name: CI/CD Azure Deployment (Manual `az login`)
 
 permissions:
-  id-token: write  # 🔥 Requis pour OIDC avec Azure
   contents: read
   packages: read
 
@@ -363,27 +361,15 @@ on:
       - main
     paths: 
       - "client-service/**"
-  pull_request:
-    branches:
-      - main
-    paths:
-      - "client-service/**"
 
 env:
   IMAGE_NAME: ghcr.io/stanislasthbd/goodfood/client-service
-  TF_CLI_ARGS_apply: "-auto-approve"
-  TF_CLI_ARGS_destroy: "-auto-approve"
-  AZURE_SUBSCRIPTION_ID: "ae835d5b-9e8f-485b-a549-6151f46f0609"  # Remplacez par votre Subscription ID
-  GHCR_USERNAME: "stanislasthbd"
-  GHCR_TOKEN: "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"
-  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
 
 jobs:
-  # 🏗️ Build & Push Docker Image
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Log in to GitHub Container Registry
@@ -400,43 +386,22 @@ jobs:
           file: ./client-service/Dockerfile
           push: true
           tags: ${{ env.IMAGE_NAME }}:latest
-          labels: |
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.description=Client Service for GoodFood
 
-  # 🚀 Déploiement sur Azure avec Terraform
   deploy_azure:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
-      
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
 
-      - name: Authenticate to Azure using OIDC  # 🔥 Authentification SANS secrets
-        uses: azure/login@v1
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}  # 🔹 Défini dans Azure AD
-          tenant-id: "190ce420-b157-44ae-bc2f-69563baa5a3b"
-          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
-          allow-no-subscriptions: true
+      - name: Authenticate to Azure (Manual az login)
+        run: |
+          echo "Lancez cette commande avant d'exécuter GitHub Actions :"
+          echo "az login --use-device-code"
+          exit 1  # ❌ Bloque le pipeline tant que `az login` n'a pas été fait manuellement
 
       - name: Deploy Infrastructure to Azure
         run: |
           cd terraform/azure
           terraform init
-          terraform apply
-
-      - name: Send Discord Notification
-        if: success()
-        run: |
-          curl -H "Content-Type: application/json" -X POST -d '{
-            "username": "CI/CD Pipeline",
-            "embeds": [{
-              "title": "✅ Azure Deployment Successful",
-              "description": "L’application Client Service a été déployée sur **Azure** 🚀",
-              "color": 3066993
-            }]
-          }' ${{ secrets.DISCORD_WEBHOOK_URL }}
+          terraform apply -auto-approve
