@@ -13,7 +13,7 @@ on:
       - "catalogue-service/**"
 
 env:
-  IMAGE_NAME: ghcr.io/Ismail-Mouyahada/Master-good-food-colab-project/service-catalogue
+  IMAGE_NAME: ghcr.io/ismail-mouyahada/mster-good-food-colab-project/service-catalogue
   TF_CLI_ARGS_apply: "-auto-approve"
   TF_CLI_ARGS_destroy: "-auto-approve"
 
