@@ -1,27 +1,56 @@
 version: '3.8'
 services:
-  mongodb:
+  catalogue-mongodb:
     image: mongo:latest
+    container_name: mongodb
+    restart: always
+    ports:
+      - "27017:27017"
     env_file:
       - .env
-
-    ports:
-      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
     volumes:
       - mongodb_data_container:/data/db
+    networks:
+      - catalogue-network
 
-  api: 
+  catalogue-service: 
     build: .
     volumes:
       - .:/app
       - /app/node_modules
     ports:
-      - ${APP_PORT}:${APP_PORT}
-    command: npm run start:dev
+      - "3002:3002"
+    command: npm run start:prod
     env_file:
       - .env
     depends_on:
-      - mongodb
+      - catalogue-mongodb
+    networks:
+      - catalogue-network
+
+  message_broker:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - "5672:5672" 
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_DEFAULT_VHOST}
+      RABBITMQ_DEFAULT_PORT: ${RABBITMQ_DEFAULT_PORT}
+    networks:
+      - catalogue-network
+
+networks:
+  catalogue-network:
+    driver: bridge
 
 volumes:
   mongodb_data_container:
+    driver: local
