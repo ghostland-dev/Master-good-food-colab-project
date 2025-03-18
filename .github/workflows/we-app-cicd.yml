@@ -5,12 +5,12 @@ on:
     branches:
       - main
     paths:
-      - "web-app/**"
+      - "app-web/**"
   pull_request:
     branches:
       - main
     paths:
-      - "web-app/**"
+      - "app-web/**"
       
 permissions:
   contents: read
@@ -18,7 +18,7 @@ permissions:
   packages: read
 
 env:
-  IMAGE_NAME: ghcr.io/stanislasthbd/web-app-service
+  IMAGE_NAME: ghcr.io/stanislasthbd/goodfood/app-web
   TF_CLI_ARGS_apply: "-auto-approve"
   TF_CLI_ARGS_destroy: "-auto-approve"
 
@@ -37,9 +37,9 @@ jobs:
           password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Build and Push Docker Image
-        working-directory: ./web-app
+        working-directory: ./app-web
         run: |
-          docker build -t ${{ env.IMAGE_NAME }}:latest ./web-app -f ./web-app/Dockerfile
+          docker build -t ${{ env.IMAGE_NAME }}:latest ./app-web -f ./app-web/Dockerfile
           echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
           docker push ${{ env.IMAGE_NAME }}:latest
 
@@ -53,10 +53,10 @@ jobs:
       - name: Deploy to Azure Container Apps
         uses: azure/container-apps-deploy-action@v2
         with:
-          appSourcePath: ${{ github.workspace }}/web-app
+          appSourcePath: ${{ github.workspace }}/app-web
           registryUrl: ghcr.io
           registryUsername: ${{ secrets.AZURE_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
-          containerAppName: web-app-service
+          containerAppName: app-web-service
           resourceGroup: myResourceGroup
-          imageToBuild: ghcr.io/stanislasthbd/web-app-service:${{ github.sha }}
+          imageToBuild: ghcr.io/stanislasthbd/goodfood/app-web:${{ github.sha }}
