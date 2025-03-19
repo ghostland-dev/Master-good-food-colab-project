@@ -17,7 +17,7 @@ on:
       - "app-web/**"
 
 env:
-  IMAGE_NAME: ghcr.io/ismail-mouyahada/mster-good-food-colab-project/app-web
+  IMAGE_NAME: ghcr.io/ismail-mouyahada/master-good-food-colab-project/app-web
   TF_CLI_ARGS_apply: "-auto-approve"
   TF_CLI_ARGS_destroy: "-auto-approve"
 
