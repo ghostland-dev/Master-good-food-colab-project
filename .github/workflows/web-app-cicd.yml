@@ -1,54 +1,91 @@
-name: CI/CD DevSecOps Pipeline for Web App Service
-
+name: react app ci/cd for azure students
 permissions:
   contents: write
   packages: write
-
 on:
   push:
     branches:
       - main
+      - master
     paths: 
       - "app-web/**"
   pull_request:
     branches:
       - main
+      - master
     paths:
       - "app-web/**"
-
 env:
-  IMAGE_NAME: ghcr.io/ismail-mouyahada/master-good-food-colab-project/app-web
+  IMAGE_NAME: ghcr.io/${{ format(github.repository, 'lowercase') }}/app-web
   TF_CLI_ARGS_apply: "-auto-approve"
   TF_CLI_ARGS_destroy: "-auto-approve"
-
 jobs:
-
-  # 🏗️ Build & Push Docker Image
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
+      - name: checkout code
         uses: actions/checkout@v4
-
-      - name: Log in to GitHub Container Registry
+        
+      - name: set up node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'npm'
+          
+      - name: install dependencies
+        run: cd app-web && npm ci
+        
+      # - name: run tests
+      #   run: cd app-web && npm test -- --passWithNoTests
+        
+      - name: build react app
+        run: cd app-web && npm run build
+        env:
+          CI: false
+          
+      - name: log in to github container registry
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
-          username: ${{ secrets.GHCR_USERNAME }}
-          password: ${{ secrets.GHCR_TOKEN }}
-
-      - name: Build and push Docker image
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: build and push docker image
         uses: docker/build-push-action@v4
         with:
-          # Le répertoire qui contient le code ET le Dockerfile
           context: ./app-web
-          # Nom du fichier Dockerfile (s’il s’appelle "Dockerfile", vous pouvez omettre cette ligne)
           file: ./app-web/Dockerfile
           push: true
           tags: ${{ env.IMAGE_NAME }}:latest
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.description=App Web 
+            org.opencontainers.image.description=React Web App
+          
+      - name: log in to azure
+        uses: azure/login@v1
+        with:
+          username: ${{ secrets.AZURE_USERNAME }}
+          password: ${{ secrets.AZURE_PASSWORD }}
+          tenant: ${{ secrets.AZURE_TENANT }}
+          
+      - name: deploy to azure container instances
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az container delete --resource-group webressources --name react-web-app --yes || true
+            az container create \
+              --resource-group webressources \
+              --name react-web-app \
+              --image ${{ env.IMAGE_NAME }}:latest \
+              --registry-login-server ghcr.io \
+              --registry-username ${{ github.actor }} \
+              --registry-password ${{ secrets.GITHUB_TOKEN }} \
+              --ports 80 \
+              --os-type linux \
+              --cpu 1 \
+              --memory 1.5 \
+              --ip-address public \
+              --dns-name-label react-web-app-ismail
 
       # - name: Azure Login
       #   uses: azure/login@v1
