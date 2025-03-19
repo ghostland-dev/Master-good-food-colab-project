@@ -1,9 +1,7 @@
 name: CI/CD DevSecOps Pipeline for Web App Service
-
 permissions:
   contents: write
   packages: write
-
 on:
   push:
     branches:
@@ -15,12 +13,10 @@ on:
       - main
     paths:
       - "app-web/"
-
 env:
   IMAGE_NAME: ghcr.io/ismail-mouyahada/master-good-food-colab-project/app-web
   TF_CLI_ARGS_apply: "-auto-approve"
   TF_CLI_ARGS_destroy: "-auto-approve"
-
 jobs:
   # 🏗️ Build & Push Docker Image
   build:
@@ -39,7 +35,7 @@ jobs:
         with:
           # Le répertoire qui contient le code ET le Dockerfile
           context: ./app-web
-          # Nom du fichier Dockerfile (s’il s’appelle "Dockerfile", vous pouvez omettre cette ligne)
+          # Nom du fichier Dockerfile (s'il s'appelle "Dockerfile", vous pouvez omettre cette ligne)
           file: ./app-web/Dockerfile
           push: true
           tags: ${{ env.IMAGE_NAME }}:latest
@@ -72,7 +68,7 @@ jobs:
               --memory 1.5 \
               --ip-address public \
               --dns-name-label react-web-app-ismail
-
+              
       # - name: Azure Login
       #   uses: azure/login@v1
       #   with:
